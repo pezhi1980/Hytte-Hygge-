@@ -340,6 +340,29 @@ public class LudoRulesTests
         Assert.Null(Rules.Result(Rules.NewGame(2)));
     }
 
+    [Fact]
+    public void Result_throws_for_finished_state_without_winner()
+    {
+        // Corrupt state (e.g. loaded from the database): Finished but nobody has 4 pawns home.
+        var progress = AllInYard(2);
+        progress[1] = new[] { Finished, Finished, 20, Yard };
+        var s = LudoState.Create(2, 0, LudoPhase.Finished, 1, progress);
+
+        Assert.Throws<InvalidOperationException>(() => Rules.Result(s));
+    }
+
+    [Fact]
+    public void Result_throws_for_finished_state_with_two_winners()
+    {
+        var quick = new LudoRules(new LudoOptions { PawnsToWin = 2 });
+        var progress = AllInYard(2);
+        progress[0] = new[] { Finished, Finished, Yard, Yard };
+        progress[1] = new[] { Finished, Finished, Yard, Yard };
+        var s = LudoState.Create(2, 0, LudoPhase.Finished, 1, progress);
+
+        Assert.Throws<InvalidOperationException>(() => quick.Result(s));
+    }
+
     // ---- Illegal actions ---------------------------------------------------------
 
     [Fact]
@@ -389,6 +412,17 @@ public class LudoRulesTests
 
         Assert.Throws<IllegalActionException>(() =>
             Rules.Apply(s, 1, LudoAction.Roll, new FixedRng(1)));
+    }
+
+    [Fact]
+    public void Default_action_is_not_a_roll_and_is_rejected()
+    {
+        var empty = default(LudoAction);
+
+        Assert.NotEqual(LudoAction.Roll, empty);
+        Assert.NotEqual(LudoActionKind.Roll, empty.Kind);
+        Assert.Throws<IllegalActionException>(() =>
+            Rules.Apply(Rules.NewGame(2), 0, empty, new FixedRng(6)));
     }
 
     [Fact]
