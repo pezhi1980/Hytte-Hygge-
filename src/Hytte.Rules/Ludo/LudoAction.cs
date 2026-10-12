@@ -2,10 +2,14 @@ using System;
 
 namespace Hytte.Rules.Ludo
 {
+    /// <summary>
+    /// Values start at 1 so that <c>default(LudoAction)</c> (e.g. from a failed
+    /// deserialization) has no valid kind and is never mistaken for a roll.
+    /// </summary>
     public enum LudoActionKind
     {
-        Roll,
-        Move,
+        Roll = 1,
+        Move = 2,
     }
 
     /// <summary>A player intent: roll the die, or move one pawn by the last roll.</summary>
@@ -32,7 +36,15 @@ namespace Hytte.Rules.Ludo
 
         public override int GetHashCode() => ((int)Kind * 397) ^ Pawn;
 
-        public override string ToString() => Kind == LudoActionKind.Roll ? "Roll" : $"Move({Pawn})";
+        public override string ToString()
+        {
+            switch (Kind)
+            {
+                case LudoActionKind.Roll: return "Roll";
+                case LudoActionKind.Move: return $"Move({Pawn})";
+                default: return $"Invalid({(int)Kind},{Pawn})";
+            }
+        }
 
         public static bool operator ==(LudoAction left, LudoAction right) => left.Equals(right);
 
