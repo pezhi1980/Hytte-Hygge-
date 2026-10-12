@@ -81,12 +81,16 @@ is applied (prevents double-tap double moves).
 
 ```csharp
 interface IGameRules<TState, TAction> {
-  TState NewGame(int seats, int seed);
+  TState NewGame(int seats);
   IReadOnlyList<TAction> LegalActions(TState s, int seat);
-  TState Apply(TState s, TAction a, IRng rng);
+  TState Apply(TState s, int seat, TAction a, IRng rng);
   GameResult? Result(TState s);
 }
 ```
+
+(Implemented in `src/Hytte.Rules/Core/IGameRules.cs`. `Apply` takes the acting
+seat so the rules themselves reject out-of-turn actions; randomness comes only
+from the injected `IRng`, so no seed is needed in `NewGame`.)
 
 - Bots only choose from `LegalActions`; they never re-implement rules.
 - `IRng` is injected: secure seeded RNG on the server, fixed RNG in tests.

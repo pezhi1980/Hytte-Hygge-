@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{3085C198-8CB2-4023-AA06-5055C9811C90}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hytte.Rules", "src\Hytte.Rules\Hytte.Rules.csproj", "{942DD72C-2AF5-4AA3-8373-78D3F7E3726C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{72D35DFC-2305-437A-AACE-7BBBF4B600A5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hytte.Rules.Tests", "tests\Hytte.Rules.Tests\Hytte.Rules.Tests.csproj", "{9246CE5B-3A91-4B88-B196-1ED790550404}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{942DD72C-2AF5-4AA3-8373-78D3F7E3726C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{942DD72C-2AF5-4AA3-8373-78D3F7E3726C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{942DD72C-2AF5-4AA3-8373-78D3F7E3726C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{942DD72C-2AF5-4AA3-8373-78D3F7E3726C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9246CE5B-3A91-4B88-B196-1ED790550404}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9246CE5B-3A91-4B88-B196-1ED790550404}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9246CE5B-3A91-4B88-B196-1ED790550404}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9246CE5B-3A91-4B88-B196-1ED790550404}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{942DD72C-2AF5-4AA3-8373-78D3F7E3726C} = {3085C198-8CB2-4023-AA06-5055C9811C90}
+		{9246CE5B-3A91-4B88-B196-1ED790550404} = {72D35DFC-2305-437A-AACE-7BBBF4B600A5}
+	EndGlobalSection
+EndGlobal
