@@ -135,6 +135,37 @@ What the player **sees** in each state.
 | **Restore purchases** | Spinner in Settings | Nothing to restore → "No purchases found" | Error → retry | "Restored" + list | — |
 | **Shop / Profile** | Skeleton rows | 0 coins → shows how to earn (play, rewarded ad), never "buy coins" | — | — | — |
 
+## 3. User journey
+
+### First launch (Decision 6A: play first, ask later)
+
+1. App opens → 1.5 s logo → straight into a **Quick Ludo game vs one bot**
+   ("Mormor Jane"). No Home, no system dialogs, no ads.
+2. Teaching happens inside the game, one hint at a time, only when needed:
+   - first turn: a soft pulse on the die + "Tap to roll"
+   - first 6: "A six lets a pawn out — and you roll again"
+   - first legal move choice: the movable pawns lift and glow
+   - first capture (either side): "Sent home! It must wait for a six"
+   Each hint shows once, ever.
+3. Game ends → Result screen → **then** the UMP consent form (EU), then ATT
+   (iOS), each once. No ad SDK is initialised before consent.
+4. Then Home, with Ludo already the "last game".
+
+> Check before release: confirm with current UMP/AdMob docs that deferring the
+> consent form until no ad has been requested is compliant. Not legal advice.
+
+### Storyboard
+
+| Step | Player does | Player feels | Design supports it with |
+|---|---|---|---|
+| 0–5 s | Opens app | Curious, a bit wary | Warm birch background, no dialogs, the board appears |
+| 5–60 s | First roll, first six | "Oh, I remember this" | Wooden clack, felt-cup dice sound, one hint at a time |
+| 1–5 min | First capture, first pawn home | Playful rivalry, satisfaction | Gentle hop-home arc, chime when a pawn finishes |
+| End of game 1 | Wins or loses vs Mormor Jane | Proud, or "one more" | Rank list, **Play again** primary, coins count up |
+| After game 1 | Consent + ATT, then Home | Trust (asked after, not before) | Plain-language consent intro on birch card |
+| Day 2–7 | Plays online / with family via room code | Connection | Room code shareable to Messages, seats fill with real names |
+| Game 50 | Routine evening game | Comfort ritual | "Next unlock" progress on Result; cosmetics change the feel (boards, dice) |
+
 ## Decisions log
 
 | # | Decision | Choice |
@@ -144,3 +175,4 @@ What the player **sees** in each state.
 | 3A | Setup flow | One screen, 3 segmented rows remembered from last game, one Start button |
 | 4A | Bot fill | Always disclosed: named Nordic bot characters + small bot badge, 8s countdown, Cancel |
 | 5A | Player leaves | 20 s turn timer; after 2 missed turns a badged bot stand-in plays; player can reclaim the seat |
+| 6A | First launch | Straight into Quick Ludo vs 1 bot; in-game hints; UMP + ATT after game 1 |
