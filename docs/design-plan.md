@@ -224,6 +224,43 @@ Gradients, glossy/bevelled buttons, neon, glow effects, emoji in UI, icons in
 colored circles, card grids on Home, centered-everything layouts, fake
 "golden" crowns and treasure chests.
 
+## 5. Design system
+
+- Section 4 is the design system for v1. At the end of this review its tokens
+  move to `DESIGN.md` at the repo root; Unity styles reference those token names.
+
+## 6. Accessibility and layout
+
+### Choosing a pawn (Decision 8A)
+
+- Only **legal** pawns (from `LegalActions`) lift slightly and glow `candle`.
+  Every other pawn is not tappable.
+- **One legal move:** the pawn lifts, holds 400 ms so the player sees what
+  happens, then moves by itself. Setting: "Auto-move when only one choice"
+  (on by default).
+- **Stacks:** own pawns on one square always have the same progress, so moving
+  any of them gives the same result. Tapping a stack moves one of them; no
+  fan-out menu is needed. A stack shows a small count badge ("×2").
+- Opponent pawns sharing a safe square with yours sit offset in the square's
+  corners so each stays visible.
+
+### Rules
+
+- Touch target ≥ **48 dp** for every interactive thing, even when the pawn art
+  is smaller (hit area extends invisibly).
+- Body text ≥ **16 pt**; respects system text size up to 130%.
+- Contrast ≥ 4.5:1 for all text (ink on birch passes).
+- Color is never the only signal: pawn shape marks, turn ring + name label,
+  legal moves lift + glow.
+- Localization: DA, SV, NO, FI, EN at launch. Every button holds a string
+  **40% longer** than English (Finnish). Test with pseudo-localization.
+- Settings: sound, haptics, reduced motion (hops become slides, no bunting
+  drop), auto-move.
+- Safe areas respected on notched phones; the bottom action stays above the
+  home indicator.
+- Tablet: same portrait layout, board max width 600 pt, centered; side space
+  holds player panels.
+
 ## Decisions log
 
 | # | Decision | Choice |
@@ -235,3 +272,4 @@ colored circles, card grids on Home, centered-everything layouts, fake
 | 5A | Player leaves | 20 s turn timer; after 2 missed turns a badged bot stand-in plays; player can reclaim the seat |
 | 6A | First launch | Straight into Quick Ludo vs 1 bot; in-game hints; UMP + ATT after game 1 |
 | 7A | Visual direction | "Cabin table": painted wood, wooden pawns, earthy palette, Fraunces + Atkinson Hyperlegible |
+| 8A | Pawn choice | Only legal pawns lift/glow; single legal move auto-plays after 400 ms (setting); tap on stack moves one |
