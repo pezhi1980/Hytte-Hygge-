@@ -166,6 +166,64 @@ What the player **sees** in each state.
 | Day 2–7 | Plays online / with family via room code | Connection | Room code shareable to Messages, seats fill with real names |
 | Game 50 | Routine evening game | Comfort ritual | "Next unlock" progress on Result; cosmetics change the feel (boards, dice) |
 
+## 4. Visual identity (Decision 7A: "Cabin table")
+
+The memory we design for: a painted wooden board on the table of a summer
+cabin, evening light, family around it. Every surface should look like a real
+object on that table, not a screen.
+
+### Materials
+
+- **Table / background:** birch-cream painted wood, very faint grain. Never a
+  gradient, never flat white.
+- **Board:** painted wood, hand-painted track squares with slightly uneven
+  edges, matte. No bevels, no gloss, no glow.
+- **Pawns:** turned wooden pawns, painted, with a visible grain and a soft
+  contact shadow (one shadow style, used only for objects that sit on the table).
+- **Dice:** bone-white with round dark pips, rolled from a small felt cup.
+- **UI chrome** (buttons, chips, sheets): flat painted-wood or paper-card
+  surfaces in the palette. One corner radius (12 pt) for all chrome.
+
+### Palette (tokens)
+
+| Token | Hex | Use |
+|---|---|---|
+| `birch` | `#F3EBDD` | Background / table |
+| `wood` | `#C89B6D` | Board frame, secondary surfaces |
+| `ink` | `#2B2622` | Text, pips, icons |
+| `lingon` | `#B23A48` | Player color 0, primary action button |
+| `pine` | `#2F5D50` | Player color 1 |
+| `mustard` | `#D9A441` | Player color 2 |
+| `fjord` | `#3A6EA5` | Player color 3 |
+| `candle` | `#F6C76B` | Highlights: legal-move glow, turn ring |
+
+- One accent for actions: `lingon`. Never more than one primary button per screen.
+- Player colors differ in lightness, not only hue. Each pawn also carries a
+  **shape mark** on its top face: ● lingon, ▲ pine, ■ mustard, ◆ fjord.
+  Color is never the only signal.
+
+### Type
+
+- **Display:** Fraunces (soft serif, OFL): game titles, result rank, room code.
+- **UI / body:** Atkinson Hyperlegible (OFL): everything else. Chosen for
+  legibility at small sizes and full Nordic character support (æ ø å ä ö).
+- Never Inter, Roboto, Arial or the system font as the primary face.
+
+### Sound and motion
+
+- Sounds are real objects: wooden clack (pawn lands), felt-cup rattle (dice),
+  soft thunk (sent home), small chime (pawn finishes). No synth whooshes.
+- Motion is physical: pawns hop square by square (120 ms/square), a captured
+  pawn arcs back to its yard (500 ms), dice tumble 600 ms.
+- Win: paper **bunting** in the palette drops across the top of the screen
+  (not confetti explosions).
+
+### Banned (AI-slop list for this project)
+
+Gradients, glossy/bevelled buttons, neon, glow effects, emoji in UI, icons in
+colored circles, card grids on Home, centered-everything layouts, fake
+"golden" crowns and treasure chests.
+
 ## Decisions log
 
 | # | Decision | Choice |
@@ -176,3 +234,4 @@ What the player **sees** in each state.
 | 4A | Bot fill | Always disclosed: named Nordic bot characters + small bot badge, 8s countdown, Cancel |
 | 5A | Player leaves | 20 s turn timer; after 2 missed turns a badged bot stand-in plays; player can reclaim the seat |
 | 6A | First launch | Straight into Quick Ludo vs 1 bot; in-game hints; UMP + ATT after game 1 |
+| 7A | Visual direction | "Cabin table": painted wood, wooden pawns, earthy palette, Fraunces + Atkinson Hyperlegible |
