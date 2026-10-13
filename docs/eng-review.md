@@ -9,8 +9,9 @@ Status: DONE_WITH_CONCERNS (one critical gap, solution defined below)
 - Launch games: **Ludo**, **Yatzy**, **Olsen**.
 - No registration: anonymous sign-in per install; optional Google/Apple link in phase 2.
 - Revenue: ads (AdMob, rewarded + interstitial), non-consumable IAP only
-  (ad removal, cosmetic packs, VIP subscription). Coins are earned, never sold,
-  never cashed out.
+  (ad removal, cosmetic packs). VIP subscription moved to v2 (design-plan 11A).
+  Coins are earned, never sold, never cashed out.
+- Audience 13+ (design-plan 9A). UI, flows and visual design: `docs/design-plan.md`.
 - Release: global store availability, paid marketing focused on DK/SE/NO/FI first.
 
 ## Decisions
@@ -49,7 +50,10 @@ matches(id, game_type, mode, status, is_private,
         room_code, seats, current_seat, version,
         state jsonb, turn_deadline, created_at, started_at, finished_at)
 match_players(match_id, seat, player_id null,
-              is_bot, bot_level, connected, rank)
+              is_bot, bot_level, connected, rank,
+              controller,      -- human | bot_standin (design-plan 5A)
+              missed_turns,    -- consecutive; 2 → bot_standin
+              room_nickname null) -- private rooms only (design-plan 12C)
 moves(match_id, seq, seat, action jsonb, at)
 matchmaking_queue(player_id, game_type, mode, at)
 ```

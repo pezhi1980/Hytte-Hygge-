@@ -261,6 +261,52 @@ colored circles, card grids on Home, centered-everything layouts, fake
 - Tablet: same portrait layout, board max width 600 pt, centered; side space
   holds player panels.
 
+## 7. Product decisions that shape the UI
+
+### Audience (Decision 9A)
+
+- Store audience: **13+**. Marketing angle: nostalgia for grown-ups who played
+  these games as kids. Store art and ads must not look like a kids' app.
+- *Check before release (not legal advice):* Google Play Families and App Store
+  age-rating rules.
+
+### Ads (Decision 10A)
+
+- **Interstitial:** only between games (after Result, before the next board),
+  at most **1 per 3 finished games**, never in the first session, never mid-game,
+  never in private rooms.
+- **Rewarded:** always opt-in, one place only: "Double coins" on the Result screen.
+- Ad removal (IAP) removes interstitials; rewarded stays available as an option.
+
+### Store (Decision 11A)
+
+- v1 sells only one-time (non-consumable) products: **Remove ads** and
+  **cosmetic packs** (boards, pawns, dice).
+- VIP subscription moves to v2. Coins are earned only, never sold (unchanged).
+
+### Names (Decision 12C)
+
+- **Public games:** generated names only: adjective + Nordic animal + number
+  (e.g. "Glad Elg 42"), localized, with a "new name" reroll. No free text.
+- **Private rooms:** each player can set a free-text room nickname
+  ("Mor", "Farfar"), shown only to people in that room.
+
+### Smaller defaults (decided here, low risk)
+
+- Country flag: shown small next to the name in public games; can be hidden in
+  Settings.
+- Turn order: clockwise. Who starts: random, shown with a short
+  "Lille Freja starts" toast. (Rules lib keeps seat 0 first; the server
+  shuffles seat assignment.)
+- Sound and haptics: on by default.
+
+### Deferred
+
+- **XP and unlocks:** what XP unlocks and the "next unlock" bar on Result is
+  not designed yet. Needed before the Shop screen is built.
+- **Yatzy and Olsen screens:** states and layouts are designed after their
+  rules docs exist.
+
 ## Decisions log
 
 | # | Decision | Choice |
@@ -273,3 +319,7 @@ colored circles, card grids on Home, centered-everything layouts, fake
 | 6A | First launch | Straight into Quick Ludo vs 1 bot; in-game hints; UMP + ATT after game 1 |
 | 7A | Visual direction | "Cabin table": painted wood, wooden pawns, earthy palette, Fraunces + Atkinson Hyperlegible |
 | 8A | Pawn choice | Only legal pawns lift/glow; single legal move auto-plays after 400 ms (setting); tap on stack moves one |
+| 9A | Audience | 13+; nostalgia for grown-ups |
+| 10A | Interstitials | Between games only, ≤1 per 3 games, never first session / mid-game / private rooms |
+| 11A | Store v1 | Remove ads + cosmetic packs (one-time). VIP subscription → v2 |
+| 12C | Names | Generated names in public; free-text nickname only inside private rooms |
