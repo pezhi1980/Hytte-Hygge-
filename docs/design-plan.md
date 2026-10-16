@@ -4,6 +4,15 @@ Status: REVIEWED (`/plan-design-review`, 2026-10-13 → 2026-10-16). Visual toke
 Companion to `docs/eng-review.md`. This file is the source of truth for what the
 player sees. Code follows this file.
 
+## Release phasing (from `/plan-eng-review`, 2026-10-17)
+
+- **Release 1 (offline):** Ludo vs bots only. Setup's "Against" row shows
+  **Bots** only; Online/Room rows are hidden. Yatzy and Olsen tiles on Home show
+  a small "Coming soon" label and are not tappable. Coins and XP are stored on
+  the device (eng-review D5).
+- **Release 2:** adds **Room** (private rooms). Matchmaking screens below stay
+  designed but are built only if public matchmaking is approved later.
+
 ## Platform
 
 - Mobile (iOS + Android), Unity.
@@ -252,7 +261,7 @@ colored circles, card grids on Home, centered-everything layouts, fake
 - Contrast ≥ 4.5:1 for all text (ink on birch passes).
 - Color is never the only signal: pawn shape marks, turn ring + name label,
   legal moves lift + glow.
-- Localization: DA, SV, NO, FI, EN at launch. Every button holds a string
+- Localization: **DA, SV, EN in Release 1**; NO and FI later. Every button holds a string
   **40% longer** than English (Finnish). Test with pseudo-localization.
 - Settings: sound, haptics, reduced motion (hops become slides, no bunting
   drop), auto-move.
