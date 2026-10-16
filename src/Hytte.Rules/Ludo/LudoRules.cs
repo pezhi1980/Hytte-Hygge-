@@ -66,7 +66,12 @@ namespace Hytte.Rules.Ludo
             if (state.Phase != LudoPhase.Finished) return null;
 
             var seats = Enumerable.Range(0, state.Seats).ToList();
-            var winner = seats.FirstOrDefault(s => state.FinishedPawns(s) >= _pawnsToWin);
+            var winners = seats.Where(s => state.FinishedPawns(s) >= _pawnsToWin).ToList();
+            if (winners.Count != 1)
+                throw new InvalidOperationException(
+                    $"Finished state must have exactly one seat with {_pawnsToWin} finished pawns, found {winners.Count}.");
+
+            var winner = winners[0];
             var ranking = new List<int> { winner };
             ranking.AddRange(seats
                 .Where(s => s != winner)
