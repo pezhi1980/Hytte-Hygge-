@@ -50,6 +50,9 @@ public class LudoFuzzTests
 
     private static void AssertInvariants(LudoState s)
     {
+        Assert.InRange(s.RollAttempts, 0, 2);
+        Assert.InRange(s.PawnsToWin, 1, LudoState.PawnsPerSeat);
+
         for (var seat = 0; seat < s.Seats; seat++)
             for (var pawn = 0; pawn < LudoState.PawnsPerSeat; pawn++)
             {

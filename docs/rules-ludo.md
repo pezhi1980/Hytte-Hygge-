@@ -30,8 +30,15 @@ the four star squares). Pawns on a safe square cannot be captured.
 
 1. The current seat **rolls** one die (1–6). The die is rolled by the server
    (or the local RNG for offline bot games), never by the client.
-2. If the roll gives the seat **no legal move**, the turn passes automatically
-   to the next seat. No extra roll, even on a 6.
+2. If the roll gives the seat **no legal move**:
+   - **Three attempts:** if every pawn of the seat is in the yard or finished
+     (none at progress 0–55), the same seat rolls again, up to **3 rolls in
+     total** for that turn. After the 3rd roll without a legal move the turn
+     passes. A legal roll on attempt 1–3 is played normally.
+   - Otherwise the turn passes automatically to the next seat.
+   - No extra roll, even on a 6, when the 6 had no legal move.
+   - The attempt counter is part of the state and resets whenever the turn
+     passes or a move is made.
 3. Otherwise the seat **moves** exactly one pawn by the roll.
 4. After a move: a roll of **6 gives another roll** to the same seat;
    any other roll passes the turn to the next seat.
@@ -52,7 +59,8 @@ the four star squares). Pawns on a safe square cannot be captured.
 
 ## Winning
 
-- A seat wins when `PawnsToWin` of its pawns are finished.
+- A seat wins when `PawnsToWin` of its pawns are finished. `PawnsToWin` is
+  stored **in the game state** (set by `NewGame`), not only in the rules object.
   - Full mode: `PawnsToWin = 4`.
   - Quick mode: `PawnsToWin = 2`.
 - The game ends as soon as one seat wins.

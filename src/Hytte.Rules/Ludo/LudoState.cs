@@ -27,6 +27,9 @@ namespace Hytte.Rules.Ludo
         public const int MinSeats = 2;
         public const int MaxSeats = 4;
 
+        /// <summary>Rolls allowed per turn while every pawn is in the yard or finished.</summary>
+        public const int MaxRollAttempts = 3;
+
         private static readonly int[][] SeatColors =
         {
             Array.Empty<int>(),
@@ -38,13 +41,15 @@ namespace Hytte.Rules.Ludo
 
         private readonly int[][] _progress;
 
-        private LudoState(int seats, int currentSeat, LudoPhase phase, int? lastRoll, int[][] progress)
+        private LudoState(int seats, int currentSeat, LudoPhase phase, int? lastRoll, int[][] progress, int pawnsToWin, int rollAttempts)
         {
             Seats = seats;
             CurrentSeat = currentSeat;
             Phase = phase;
             LastRoll = lastRoll;
             _progress = progress;
+            PawnsToWin = pawnsToWin;
+            RollAttempts = rollAttempts;
         }
 
         public int Seats { get; }
@@ -55,6 +60,23 @@ namespace Hytte.Rules.Ludo
 
         /// <summary>The most recent roll, kept visible after the turn passes so the UI can show it.</summary>
         public int? LastRoll { get; }
+
+        /// <summary>Finished pawns a seat needs to win: 4 = full game, 2 = quick game.</summary>
+        public int PawnsToWin { get; }
+
+        /// <summary>
+        /// Failed rolls already used this turn under the three-attempts rule (0–2).
+        /// Resets when the turn passes or a move is made.
+        /// </summary>
+        public int RollAttempts { get; }
+
+        /// <summary>True when every pawn of the seat is in the yard or finished.</summary>
+        public bool HasNoPawnInPlay(int seat)
+        {
+            foreach (var p in _progress[seat])
+                if (p != Yard && p != Finished) return false;
+            return true;
+        }
 
         public int Progress(int seat, int pawn) => _progress[seat][pawn];
 
@@ -93,8 +115,14 @@ namespace Hytte.Rules.Ludo
         /// <summary>
         /// Builds a validated state, e.g. when loading from the database. The arrays are copied.
         /// </summary>
-        public static LudoState Create(int seats, int currentSeat, LudoPhase phase, int? lastRoll, int[][] progress)
+        public static LudoState Create(
+            int seats, int currentSeat, LudoPhase phase, int? lastRoll, int[][] progress,
+            int pawnsToWin = PawnsPerSeat, int rollAttempts = 0)
         {
+            if (pawnsToWin < 1 || pawnsToWin > PawnsPerSeat)
+                throw new ArgumentOutOfRangeException(nameof(pawnsToWin), pawnsToWin, "PawnsToWin must be 1–4.");
+            if (rollAttempts < 0 || rollAttempts >= MaxRollAttempts)
+                throw new ArgumentOutOfRangeException(nameof(rollAttempts), rollAttempts, "RollAttempts must be 0–2.");
             if (seats < MinSeats || seats > MaxSeats)
                 throw new ArgumentOutOfRangeException(nameof(seats), seats, "Ludo needs 2–4 seats.");
             if (currentSeat < 0 || currentSeat >= seats)
@@ -118,7 +146,7 @@ namespace Hytte.Rules.Ludo
                 copy[seat] = (int[])row.Clone();
             }
 
-            return new LudoState(seats, currentSeat, phase, lastRoll, copy);
+            return new LudoState(seats, currentSeat, phase, lastRoll, copy, pawnsToWin, rollAttempts);
         }
 
         internal int[][] CopyProgress()
@@ -130,7 +158,7 @@ namespace Hytte.Rules.Ludo
         }
 
         /// <summary>Internal constructor for rules: takes ownership of an already-copied array.</summary>
-        internal static LudoState FromOwned(int seats, int currentSeat, LudoPhase phase, int? lastRoll, int[][] ownedProgress) =>
-            new LudoState(seats, currentSeat, phase, lastRoll, ownedProgress);
+        internal LudoState With(int currentSeat, LudoPhase phase, int? lastRoll, int[][] ownedProgress, int rollAttempts) =>
+            new LudoState(Seats, currentSeat, phase, lastRoll, ownedProgress, PawnsToWin, rollAttempts);
     }
 }
