@@ -1,6 +1,6 @@
 # Hytte Hygge — Design Plan
 
-Status: IN REVIEW (`/plan-design-review`, started 2026-10-13)
+Status: REVIEWED (`/plan-design-review`, 2026-10-13 → 2026-10-16). Visual tokens: `DESIGN.md`.
 Companion to `docs/eng-review.md`. This file is the source of truth for what the
 player sees. Code follows this file.
 
@@ -226,8 +226,8 @@ colored circles, card grids on Home, centered-everything layouts, fake
 
 ## 5. Design system
 
-- Section 4 is the design system for v1. At the end of this review its tokens
-  move to `DESIGN.md` at the repo root; Unity styles reference those token names.
+- Tokens, type scale, shape, motion and sound are in `DESIGN.md` at the repo
+  root. Unity styles reference those token names.
 
 ## 6. Accessibility and layout
 
@@ -307,6 +307,36 @@ colored circles, card grids on Home, centered-everything layouts, fake
 - **Yatzy and Olsen screens:** states and layouts are designed after their
   rules docs exist.
 
+## Approved mockups
+
+Claude Design canvas **"Hytte Hygge — Ludo mockups"** (approved 2026-10-16,
+decision 16A).
+
+| Screen | Artboard | Shows |
+|---|---|---|
+| Board, your turn | `Main.dc.html` | Rotated board (lingon bottom-left), die = 4, two legal pawns lifted with candle ring, ×2 stack on start, opponent chips incl. bot "Mormor Jane" and a bot stand-in, hint + 14 s timer in thumb zone |
+| Home | `Home.dc.html` | Wordmark, coins, Shop/Settings icons, wood "Last played: Ludo" panel with Play, three game tiles |
+| Result | `Result.dc.html` | Paper bunting, "You won!", rank list, +40 coins / +25 XP, opt-in rewarded "double coins", Play again, Home |
+
+## What already exists (reuse)
+
+- `LegalActions` drives which pawns are tappable: the UI never re-derives rules.
+- `LudoState.LastRoll` stays visible after the turn passes: shows the
+  opponent's roll and the "No move" moment.
+- The three `LudoPhase` values map 1:1 to board states (roll / choose / finished).
+- `LudoState.AbsoluteSquare` gives positions; board rotation is a view transform.
+
+## NOT in scope (v1)
+
+| Item | Why deferred |
+|---|---|
+| Landscape layout | Portrait-only (2A); tablets center the board |
+| Evening / candlelight dark mode | Nice-to-have; one theme first |
+| VIP subscription screens | Moved to v2 (11A) |
+| Chat, emotes, friends list | Not in v1 scope (eng-review) |
+| Yatzy and Olsen screens | Need their rules docs first |
+| XP unlock tree | Needs its own design pass before the Shop |
+
 ## Decisions log
 
 | # | Decision | Choice |
@@ -323,3 +353,4 @@ colored circles, card grids on Home, centered-everything layouts, fake
 | 10A | Interstitials | Between games only, ≤1 per 3 games, never first session / mid-game / private rooms |
 | 11A | Store v1 | Remove ads + cosmetic packs (one-time). VIP subscription → v2 |
 | 12C | Names | Generated names in public; free-text nickname only inside private rooms |
+| 16A | Mockups | "Cabin table" mockups approved (Board, Home, Result) |
