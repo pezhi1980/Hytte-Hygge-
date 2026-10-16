@@ -15,22 +15,25 @@ namespace Hytte.Rules.Ludo
     /// Ludo rules as specified in docs/rules-ludo.md.
     ///
     ///   AwaitingRoll ──Roll──► AwaitingMove ──Move──► AwaitingRoll (same seat on 6, else next)
-    ///        ▲                     │                        │
-    ///        └── no legal move ────┘ (next seat)            └──► Finished (PawnsToWin reached)
+    ///     ▲      │                                          │
+    ///     │      └─ no legal move: same seat again while    └──► Finished (state.PawnsToWin reached)
+    ///     │         no pawn is in play and attempts &lt; 3,
+    ///     └──────── otherwise next seat (attempts reset)
     /// </summary>
     public sealed class LudoRules : IGameRules<LudoState, LudoAction>
     {
         private static readonly IReadOnlyList<LudoAction> NoActions = Array.Empty<LudoAction>();
         private static readonly IReadOnlyList<LudoAction> RollOnly = new[] { LudoAction.Roll };
 
-        private readonly int _pawnsToWin;
+        /// <summary>Win condition for games started by <see cref="NewGame"/>; stored in the state from then on.</summary>
+        private readonly int _newGamePawnsToWin;
 
         public LudoRules(LudoOptions options)
         {
             if (options == null) throw new ArgumentNullException(nameof(options));
             if (options.PawnsToWin < 1 || options.PawnsToWin > LudoState.PawnsPerSeat)
                 throw new ArgumentOutOfRangeException(nameof(options), options.PawnsToWin, "PawnsToWin must be 1–4.");
-            _pawnsToWin = options.PawnsToWin;
+            _newGamePawnsToWin = options.PawnsToWin;
         }
 
         public LudoState NewGame(int seats)
@@ -38,7 +41,7 @@ namespace Hytte.Rules.Ludo
             var progress = new int[seats < 0 ? 0 : seats][];
             for (var seat = 0; seat < progress.Length; seat++)
                 progress[seat] = new[] { LudoState.Yard, LudoState.Yard, LudoState.Yard, LudoState.Yard };
-            return LudoState.Create(seats, 0, LudoPhase.AwaitingRoll, null, progress);
+            return LudoState.Create(seats, 0, LudoPhase.AwaitingRoll, null, progress, _newGamePawnsToWin);
         }
 
         public IReadOnlyList<LudoAction> LegalActions(LudoState state, int seat)
@@ -66,10 +69,10 @@ namespace Hytte.Rules.Ludo
             if (state.Phase != LudoPhase.Finished) return null;
 
             var seats = Enumerable.Range(0, state.Seats).ToList();
-            var winners = seats.Where(s => state.FinishedPawns(s) >= _pawnsToWin).ToList();
+            var winners = seats.Where(s => state.FinishedPawns(s) >= state.PawnsToWin).ToList();
             if (winners.Count != 1)
                 throw new InvalidOperationException(
-                    $"Finished state must have exactly one seat with {_pawnsToWin} finished pawns, found {winners.Count}.");
+                    $"Finished state must have exactly one seat with {state.PawnsToWin} finished pawns, found {winners.Count}.");
 
             var winner = winners[0];
             var ranking = new List<int> { winner };
@@ -82,10 +85,15 @@ namespace Hytte.Rules.Ludo
         private LudoState ApplyRoll(LudoState state, int seat, IRng rng)
         {
             var roll = rng.Next(1, 7);
-            if (LegalMoves(state, seat, roll).Count == 0)
-                return LudoState.FromOwned(state.Seats, NextSeat(state), LudoPhase.AwaitingRoll, roll, state.CopyProgress());
+            if (LegalMoves(state, seat, roll).Count > 0)
+                return state.With(seat, LudoPhase.AwaitingMove, roll, state.CopyProgress(), state.RollAttempts);
 
-            return LudoState.FromOwned(state.Seats, seat, LudoPhase.AwaitingMove, roll, state.CopyProgress());
+            // No legal move. Three attempts while no pawn is in play, else the turn passes.
+            var attemptsUsed = state.RollAttempts + 1;
+            if (state.HasNoPawnInPlay(seat) && attemptsUsed < LudoState.MaxRollAttempts)
+                return state.With(seat, LudoPhase.AwaitingRoll, roll, state.CopyProgress(), attemptsUsed);
+
+            return state.With(NextSeat(state), LudoPhase.AwaitingRoll, roll, state.CopyProgress(), 0);
         }
 
         private LudoState ApplyMove(LudoState state, int seat, int pawn)
@@ -98,13 +106,13 @@ namespace Hytte.Rules.Ludo
 
             CaptureAt(state, seat, to, progress);
 
-            var moved = LudoState.FromOwned(state.Seats, seat, LudoPhase.AwaitingRoll, roll, progress);
-            if (moved.FinishedPawns(seat) >= _pawnsToWin)
-                return LudoState.FromOwned(state.Seats, seat, LudoPhase.Finished, roll, progress);
+            var moved = state.With(seat, LudoPhase.AwaitingRoll, roll, progress, 0);
+            if (moved.FinishedPawns(seat) >= state.PawnsToWin)
+                return state.With(seat, LudoPhase.Finished, roll, progress, 0);
 
             return roll == 6
                 ? moved
-                : LudoState.FromOwned(state.Seats, NextSeat(state), LudoPhase.AwaitingRoll, roll, progress);
+                : state.With(NextSeat(state), LudoPhase.AwaitingRoll, roll, progress, 0);
         }
 
         /// <summary>Sends every opponent pawn on the mover's (unsafe) main-track square back to its yard.</summary>

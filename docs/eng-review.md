@@ -193,7 +193,7 @@ RULES LIB (xUnit)
 │   │         (fail 3× → pass; 6 on try 2 → leave yard; attempts reset per turn)
 │   └── [GAP] PawnsToWin read from state (quick vs full after round-trip)
 ├── Bots
-│   ├── [GAP] every choice ∈ LegalActions — 10k games per temperament
+│   ├── [GAP] every choice ∈ LegalActions — 2k games per temperament
 │   ├── [GAP] clever: capture > finish > leave yard (fixed positions)
 │   └── [GAP] cunning: moves out of an opponent's reach when it can
 ├── Yatzy / Olsen: [GAP] when their rules docs exist
