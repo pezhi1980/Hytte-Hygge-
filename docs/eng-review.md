@@ -21,6 +21,7 @@ Status: DONE_WITH_CONCERNS (one critical gap, solution defined below)
 | D1 | Where the rules logic lives | Shared **C# rules library** (netstandard2.1) used by Unity and a small **.NET service** on Render. Supabase = Postgres + Auth only. |
 | D2 | How state reaches clients | **Stateless .NET**: client sends moves over HTTP, .NET writes to Postgres. Postgres is the source of truth. |
 | D3 | Realtime fan-out | **Broadcast from .NET** to Supabase Realtime channel `match:{id}` (not `postgres_changes`). |
+| D4 | Channel privacy | `match:{id}` is a **private** channel (`private: true`). RLS `select` policy on `realtime.messages` allows only users in `match_players` for that match; no client `insert` policy (only the server sends). "Allow public access" off. |
 
 ## Architecture
 
@@ -41,8 +42,11 @@ Bot-only game: Unity + Rules lib (fully local, no server)
 ## Data model
 
 ```
-players(id = auth.uid, display_name, country,
-        coins, xp, equipped jsonb, created_at)
+players(id = auth.uid,
+        name_adj smallint, name_animal smallint, name_num smallint,
+                         -- generated public name as word ids; each client renders
+                         -- it in its own language (design-plan 12C). No free text.
+        country, coins, xp, equipped jsonb, created_at)
 coin_ledger(id, player_id, delta, reason, ref, at)
 entitlements(player_id, product_id, store,
              txn_id unique, expires_at)
@@ -53,7 +57,8 @@ match_players(match_id, seat, player_id null,
               is_bot, bot_level, connected, rank,
               controller,      -- human | bot_standin (design-plan 5A)
               missed_turns,    -- consecutive; 2 → bot_standin
-              room_nickname null) -- private rooms only (design-plan 12C)
+              room_nickname null, -- private rooms only (design-plan 12C)
+              bot_persona null)   -- shared persona list index (design-plan 4A)
 moves(match_id, seq, seat, action jsonb, at)
 matchmaking_queue(player_id, game_type, mode, at)
 ```
@@ -70,6 +75,10 @@ POST /matchmake {game_type, mode}
   → {match_id, seat} | {status: "queued"}
 POST /rooms {game_type, seats} → {room_code, match_id}
 POST /rooms/join {room_code} → {match_id, seat}
+POST /matches/{id}/resume
+  → {version, state, seat}
+  -- caller must own a seat; sets controller=human, missed_turns=0
+  -- (design-plan 5A). Bumps version. Also the one reconnect path.
 POST /move {match_id, expected_version,
             action: {type:"roll"} | {type:"move", pawn:2}}
   → {version, state} | 409 conflict
@@ -105,7 +114,43 @@ from the injected `IRng`, so no seed is needed in `NewGame`.)
 - **Turn timeouts:** a .NET `BackgroundService` polls every second for matches
   whose `turn_deadline` has passed and auto-plays the move. Use
   `FOR UPDATE SKIP LOCKED` so two service instances never handle the same match.
-- **Reconnect:** client reloads the full `state` after reconnecting, not deltas.
+- **Reconnect:** client calls `POST /matches/{id}/resume` and reloads the full
+  `state`, not deltas. The same call reclaims a seat from a bot stand-in.
+
+## Turn advance (one code path for humans, bots and stand-ins)
+
+Every state change (`/move`, timeout auto-move, `/resume`) runs in one DB
+transaction on the match row (`SELECT … FOR UPDATE`), then broadcasts once.
+
+```
+apply action ──► version++ ──► next seat's controller?
+                                   │
+              ┌────────────────────┼─────────────────────┐
+              ▼                    ▼                     ▼
+          human              bot / bot_standin       game finished
+     set turn_deadline     apply bot actions in a      ranks, rewards
+     = now + 20 s          loop until a human seat     (coin_ledger)
+     missed_turns kept     or finish (same txn)
+              │                    │                     │
+              └──────────── broadcast state once ────────┘
+
+timeout service: deadline passed ──► auto-move for that human seat,
+                                     missed_turns++ ; if 2 → controller = bot_standin
+human /move on own turn ──► missed_turns = 0
+```
+
+- **Seat order (design-plan "who starts"):** rules lib keeps seat 0 first. At
+  match start the server assigns players to seats in a random order using the
+  secure RNG. Offline games do the same on the device.
+- **Bot disclosure (4A):** `match_players` gets `bot_persona smallint`
+  (index into the shared persona list: name + temperament). `is_bot` and
+  `controller = bot_standin` are both sent to clients so the badge can render.
+- **Room nickname (12C):** 1–16 characters after trimming; control and
+  bidi-override characters stripped; set only on private-room seats; never
+  copied to `players`.
+- **Client-only, no server work:** interstitial frequency (10A) is a local
+  counter plus the ad-removal entitlement; consent timing (6A) means the ad SDK
+  is not initialised before the UMP form. Anonymous sign-in at launch stays.
 - **Bots in online games:** server computes the bot move immediately; the client
   adds a short animation delay.
 - **Realtime limits:** Supabase free tier has a low concurrent-connection cap;
