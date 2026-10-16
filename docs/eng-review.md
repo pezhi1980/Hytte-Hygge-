@@ -106,6 +106,11 @@ seat so the rules themselves reject out-of-turn actions; randomness comes only
 from the injected `IRng`, so no seed is needed in `NewGame`.)
 
 - Bots only choose from `LegalActions`; they never re-implement rules.
+- **Bots live in the rules lib** (`Hytte.Rules.Bots`): `IBot<TState,TAction>`
+  with `TAction Choose(TState s, int seat, IRng rng)`. `LudoBot` has three
+  temperaments: calm (random legal), clever (prefer capture, then finish,
+  then leave yard), cunning (clever + avoid squares an opponent can reach).
+  The same code runs offline in Unity, for online bots and for stand-ins.
 - `IRng` is injected: secure seeded RNG on the server, fixed RNG in tests.
 - `Apply` is pure: no DB, no Unity, no mutation of the input.
 
@@ -139,6 +144,14 @@ timeout service: deadline passed ──► auto-move for that human seat,
 human /move on own turn ──► missed_turns = 0
 ```
 
+- **Broadcast payload:** one message per transaction:
+  `{from_version, version, state, steps:[{seat, action, roll}]}`. `steps` are
+  the rows just written to `moves`. The client plays them through its
+  animation queue (dice, 120 ms hops, captures) and then checks it ended on
+  `state`; if `from_version` ≠ its version it skips animation and snaps to
+  `state`.
+- **Timeout poller index:** partial index on `matches(turn_deadline)
+  WHERE status = 'active'` so the 1 s poll stays an index scan.
 - **Seat order (design-plan "who starts"):** rules lib keeps seat 0 first. At
   match start the server assigns players to seats in a random order using the
   secure RNG. Offline games do the same on the device.
@@ -165,35 +178,62 @@ human /move on own turn ──► missed_turns = 0
 - Avoid: Photon (CCU pricing is overkill for turn-based), Firebase alongside
   Supabase (two backends), any free-text chat service.
 
-## Test map (all gaps; project is new)
+## Test map
+
+Server integration tests run against **real Postgres in Testcontainers**
+(same major version and the same Supabase migrations as production), locally
+and in CI. Realtime RLS (D4) is tested against a Supabase branch in a separate,
+slower job. No in-memory fake DB: row locks and `SKIP LOCKED` are the point.
 
 ```
 RULES LIB (xUnit)
-├── Ludo
-│   ├── [GAP] exit only on 6, extra roll on 6
-│   ├── [GAP] capture → pawn home; safe squares
-│   ├── [GAP] exact roll to finish; no legal move → pass
-│   └── [GAP] 2/3/4 seats, quick vs full mode
+├── Ludo                     [DONE] LudoRulesTests + 10k fuzz (LudoFuzzTests)
+├── Bots (Hytte.Rules.Bots)
+│   ├── [GAP] every choice ∈ LegalActions — 10k games per temperament (fuzz)
+│   ├── [GAP] clever: capture > finish > leave yard (fixed positions)
+│   └── [GAP] cunning: moves out of an opponent's reach when it can
 ├── Yatzy: [GAP] all 15 categories, bonus ≥63, 3 rolls max
-├── Olsen: [GAP] special cards, empty deck reshuffle
-└── Bots: [GAP] 10k random games → never illegal, always ends
+└── Olsen: [GAP] special cards, empty deck reshuffle
 
-SERVER (integration)
-├── [GAP] /move wrong seat → 403
-├── [GAP] stale expected_version → 409
-├── [GAP] double-tap same move → one applied
-├── [GAP] deadline passed → auto-move by service
+SERVER (integration, Testcontainers Postgres)
+├── /move
+│   ├── [GAP] wrong seat → 403 ; not a member → 403
+│   ├── [GAP] stale expected_version → 409
+│   ├── [GAP] double-tap same move → exactly one applied
+│   └── [GAP] own-turn human move → missed_turns = 0
+├── Turn advance
+│   ├── [GAP] next seat human → turn_deadline = now + 20 s
+│   ├── [GAP] next seat bot / bot_standin → loop until human seat or finish
+│   ├── [GAP] game ends inside bot loop → ranks + one coin_ledger row per player
+│   └── [GAP] whole loop = one transaction, one broadcast
+├── Timeout service
+│   ├── [GAP] deadline passed → auto-move, missed_turns++
+│   ├── [GAP] 2nd miss → controller = bot_standin, bot plays at once
+│   └── [GAP] two service instances → each match handled once (SKIP LOCKED)
+├── /matches/{id}/resume
+│   ├── [GAP] not a member → 403
+│   ├── [GAP] bot_standin → human, missed_turns = 0, version++
+│   ├── [GAP] finished match → final state, no change
+│   └── [GAP] two concurrent resumes → one version bump, same final state
+├── Seat shuffle: [GAP] each player gets exactly one seat; ~uniform over 10k
+├── Names: [GAP] name id outside word list → 400 ; nickname bidi/control chars stripped
 ├── [GAP] all humans left → match abandoned
-└── [GAP] RevenueCat webhook replay → no duplicate
+└── [GAP] RevenueCat webhook replay → no duplicate entitlement
+
+REALTIME (Supabase branch job)
+├── [GAP][→E2E] non-member cannot join match:{id}
+└── [GAP][→E2E] member cannot send to match:{id} (server only)
 
 USER FLOWS
-├── [GAP][→E2E] queue 8s → bots fill → game ends
-├── [GAP][→E2E] room code → friend joins → play
-└── [GAP][→E2E] app killed mid-game → reopen → resume
+├── [GAP][→E2E] queue 8 s → named, badged bots fill → game ends
+├── [GAP][→E2E] room code → friend joins with nickname → only room sees it
+├── [GAP][→E2E] miss 2 turns → stand-in plays → reopen app → resume → play
+├── [GAP][→E2E] app killed mid-game → reopen → resume
+└── [GAP][→E2E] first launch → bot game → no ad SDK before consent
 ```
 
-The "10k random bot games" test is the highest-value test: it catches any
-stuck state or illegal move.
+The "10k random bot games" tests are the highest-value tests: they catch any
+stuck state or illegal move, and now also any bot that picks an illegal action.
 
 ## Failure modes
 
@@ -202,6 +242,11 @@ stuck state or illegal move.
 | Network drops while sending a move | Client retries; `expected_version` prevents duplicates. |
 | **Timeout service crashes → match stuck forever, silent** | **CRITICAL GAP.** Fix: Render health check + client shows "opponent disconnected" after 2× turn time. |
 | Two service instances run the same timeout | `FOR UPDATE SKIP LOCKED`. |
+| Player reconnects while the stand-in bot loop runs | Both take the match row lock; `/resume` waits, then flips `controller` for the next turn. Test: concurrent resume. |
+| Bot loop never reaches a human seat (all humans stand-ins or gone) | Loop ends at game finish (rules guarantee termination, fuzz-tested); if every human seat is a stand-in for 10 min → match abandoned. |
+| Nickname with bidi override renders a fake name | Strip control + bidi characters server-side; test. |
+| Realtime private channel misconfigured (public access left on) | Integration job asserts a non-member join is rejected; fails CI. |
+| Bot picks an illegal action | `Apply` throws `IllegalActionException`; bot fuzz test prevents it; server logs + falls back to first legal action. |
 
 ## Not in scope (v1)
 
