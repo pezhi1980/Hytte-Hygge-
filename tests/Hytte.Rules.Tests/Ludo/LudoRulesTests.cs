@@ -74,7 +74,12 @@ public class LudoRulesTests
     [Fact]
     public void Roll_without_legal_move_passes_turn_and_keeps_roll_visible()
     {
-        var s = Rules.Apply(Rules.NewGame(4), 0, LudoAction.Roll, new FixedRng(3));
+        // A pawn is on the track (54), so the three-attempts rule does not apply.
+        var progress = AllInYard(4);
+        progress[0][0] = 54;
+        var start = LudoState.Create(4, 0, LudoPhase.AwaitingRoll, null, progress);
+
+        var s = Rules.Apply(start, 0, LudoAction.Roll, new FixedRng(3));
 
         Assert.Equal(1, s.CurrentSeat);
         Assert.Equal(LudoPhase.AwaitingRoll, s.Phase);
@@ -326,7 +331,7 @@ public class LudoRulesTests
         var quick = new LudoRules(new LudoOptions { PawnsToWin = 2 });
         var progress = AllInYard(2);
         progress[0] = new[] { Finished, 55, Yard, Yard };
-        var s = LudoState.Create(2, 0, LudoPhase.AwaitingMove, 1, progress);
+        var s = LudoState.Create(2, 0, LudoPhase.AwaitingMove, 1, progress, pawnsToWin: 2);
 
         s = quick.Apply(s, 0, LudoAction.Move(1), new FixedRng());
 
@@ -358,7 +363,7 @@ public class LudoRulesTests
         var progress = AllInYard(2);
         progress[0] = new[] { Finished, Finished, Yard, Yard };
         progress[1] = new[] { Finished, Finished, Yard, Yard };
-        var s = LudoState.Create(2, 0, LudoPhase.Finished, 1, progress);
+        var s = LudoState.Create(2, 0, LudoPhase.Finished, 1, progress, pawnsToWin: 2);
 
         Assert.Throws<InvalidOperationException>(() => quick.Result(s));
     }
